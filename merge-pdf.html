@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Merge PDF – PDFPro Tools</title>
 
+<!-- pdf-lib (required for merging) -->
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
 <style>
 /* ---------------- GLOBAL THEME ---------------- */
 :root{
@@ -220,8 +223,39 @@ function removeFile(index){
   fileUpload.onchange();
 }
 
-document.getElementById("mergeBtn").onclick = () => {
-  alert("Merge Function Add Kar Dunga Agar Chaho — Pure PDF Merge Code Browser Ke Andar!");
+/* ---------------- REAL MERGE FUNCTION ---------------- */
+document.getElementById("mergeBtn").onclick = async () => {
+  if (fileUpload.files.length === 0){
+    alert("Please upload at least 2 PDF files.");
+    return;
+  }
+
+  const { PDFDocument } = PDFLib;
+  const mergedPdf = await PDFDocument.create();
+
+  try{
+    for (let file of fileUpload.files){
+      const bytes = await file.arrayBuffer();
+      const pdf = await PDFDocument.load(bytes);
+      const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      pages.forEach(p => mergedPdf.addPage(p));
+    }
+
+    const mergedBytes = await mergedPdf.save();
+    const blob = new Blob([mergedBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "merged.pdf";
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+  } catch (err){
+    console.error(err);
+    alert("Error merging PDF files.");
+  }
 };
 </script>
 
